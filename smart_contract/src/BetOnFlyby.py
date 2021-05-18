@@ -25,10 +25,9 @@ OWNER_KEY = b'OWNER'
 # -------------------------------------------
 
 @public
-def call_me() -> UInt160:
+def request_image_change():
     invoker = calling_script_hash
     on_change_image(invoker)
-    return invoker
 
 
 # -------------------------------------------

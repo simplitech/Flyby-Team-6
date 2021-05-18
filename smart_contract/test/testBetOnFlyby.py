@@ -17,11 +17,11 @@ class TestExample(unittest.TestCase):
         cls.engine = TestEngine(test_engine_installation_folder)
 
     def test_example(self):
-        path = f'{self.dirname}/src/UpdateImage.py'
+        path = f'{self.dirname}/src/BetOnFlyby.py'
         nef_path = path.replace('.py', '.nef')
 
         Boa3.compile_and_save(path, output_path=nef_path)
 
         self.engine.reset_engine()
-        result = self.engine.run(nef_path, 'call_me')
+        result = self.engine.run(nef_path, 'request_image_change')
         self.assertIsNone(result)  # calling_script_hash in the test engine is None
