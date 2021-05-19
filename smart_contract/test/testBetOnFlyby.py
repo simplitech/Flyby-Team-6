@@ -8,7 +8,7 @@ from boa3.neo3.vm import VMState
 from boa3_test.tests.test_classes.testengine import TestEngine
 
 
-class TestExample(unittest.TestCase):
+class TestSmartContract(unittest.TestCase):
     engine: TestEngine
 
     @classmethod
@@ -36,23 +36,23 @@ class TestExample(unittest.TestCase):
         event_notifications = self.engine.get_events(event_name=on_change_image_event_name)
         self.assertEqual(1, len(event_notifications))
 
-    def _create_bet(self, creator_account: bytes, description: str, options: List[str]):
+    def _create_pool(self, creator_account: bytes, description: str, options: List[str]):
         self.engine.add_signer_account(creator_account)
-        return self.engine.run(self.nef_path, 'create_bet', creator_account, description, options)
+        return self.engine.run(self.nef_path, 'create_pool', creator_account, description, options)
 
-    def test_create_bet_success(self):
+    def test_create_pool_success(self):
         self.engine.reset_engine()
 
         creator_account = bytes(20)
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        result = self._create_bet(creator_account, description, options)
+        result = self._create_pool(creator_account, description, options)
         self.assertEqual(VMState.HALT, self.engine.vm_state)
         self.assertIsInstance(result, bytes)
         self.assertEqual(32, len(result))
 
-    def test_create_bet_fail_check_witness(self):
+    def test_create_pool_fail_check_witness(self):
         self.engine.reset_engine()
 
         creator_account = bytes(20)
@@ -60,11 +60,11 @@ class TestExample(unittest.TestCase):
         options = []
 
         # need signing
-        self.engine.run(self.nef_path, 'create_bet', creator_account, description, options)
+        self.engine.run(self.nef_path, 'create_pool', creator_account, description, options)
         self.assertEqual(VMState.FAULT, self.engine.vm_state)
         self.assertTrue(self.engine.error.endswith('No authorization.'))
 
-    def test_create_bet_fail_not_enough_options(self):
+    def test_create_pool_fail_not_enough_options(self):
         self.engine.reset_engine()
 
         creator_account = bytes(20)
@@ -73,17 +73,17 @@ class TestExample(unittest.TestCase):
 
         self.engine.add_signer_account(creator_account)
         # need at least two different options
-        self.engine.run(self.nef_path, 'create_bet', creator_account, description, options)
+        self.engine.run(self.nef_path, 'create_pool', creator_account, description, options)
         self.assertEqual(VMState.FAULT, self.engine.vm_state)
-        self.assertTrue(self.engine.error.endswith('Not enough options to create a bet'))
+        self.assertTrue(self.engine.error.endswith('Not enough options to create a pool'))
 
         options = ['choice1', 'choice1']  # need at least two different options
         self.engine.add_signer_account(creator_account)
-        self.engine.run(self.nef_path, 'create_bet', creator_account, description, options)
+        self.engine.run(self.nef_path, 'create_pool', creator_account, description, options)
         self.assertEqual(VMState.FAULT, self.engine.vm_state)
-        self.assertTrue(self.engine.error.endswith('Not enough options to create a bet'))
+        self.assertTrue(self.engine.error.endswith('Not enough options to create a pool'))
 
-    def test_create_bet_fail_empty_option(self):
+    def test_create_pool_fail_empty_option(self):
         self.engine.reset_engine()
 
         creator_account = bytes(20)
@@ -92,7 +92,7 @@ class TestExample(unittest.TestCase):
 
         self.engine.add_signer_account(creator_account)
 
-        self.engine.run(self.nef_path, 'create_bet', creator_account, description, options)
+        self.engine.run(self.nef_path, 'create_pool', creator_account, description, options)
         self.assertEqual(VMState.FAULT, self.engine.vm_state)
         self.assertTrue(self.engine.error.endswith('Cannot have an empty option'))
 
@@ -109,7 +109,7 @@ class TestExample(unittest.TestCase):
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
         player = bytes(range(20))
         bet_option = 'choice1'
         price_in_gas = 1 * 10 ** 8  # 1 GAS
@@ -129,7 +129,7 @@ class TestExample(unittest.TestCase):
 
         self.engine.run(self.nef_path, 'bet', player, bet_id, bet_option)
         self.assertEqual(VMState.FAULT, self.engine.vm_state)
-        self.assertTrue(self.engine.error.endswith("Bet doesn't exist."))
+        self.assertTrue(self.engine.error.endswith("Pool doesn't exist."))
 
     def test_bet_fail_check_witness(self):
         self.engine.reset_engine()
@@ -138,7 +138,7 @@ class TestExample(unittest.TestCase):
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
         player = bytes(range(20))
         bet_option = 'choice1'
 
@@ -153,14 +153,14 @@ class TestExample(unittest.TestCase):
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
         bet_option = 'choice1'
-        self._finish_bet(creator_account, bet_id, [bet_option])
+        self._finish_pool(creator_account, bet_id, [bet_option])
         player = bytes(range(20))
 
         self._bet(bet_id, player, bet_option)
         self.assertEqual(VMState.FAULT, self.engine.vm_state)
-        self.assertTrue(self.engine.error.endswith('Bet is finished already'))
+        self.assertTrue(self.engine.error.endswith('Pool is finished already'))
 
     def test_bet_fail_voted_already(self):
         self.engine.reset_engine()
@@ -169,7 +169,7 @@ class TestExample(unittest.TestCase):
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
         player = bytes(range(20))
         bet_option = 'choice1'
 
@@ -187,13 +187,13 @@ class TestExample(unittest.TestCase):
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
         player = bytes(range(20))
         bet_option = 'choice4'
 
         self._bet(bet_id, player, bet_option)
         self.assertEqual(VMState.FAULT, self.engine.vm_state)
-        self.assertTrue(self.engine.error.endswith('Invalid option for this bet'))
+        self.assertTrue(self.engine.error.endswith('Invalid option for this pool'))
 
     def test_bet_fail_not_enough_gas(self):
         self.engine.reset_engine()
@@ -202,7 +202,7 @@ class TestExample(unittest.TestCase):
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
         player = bytes(range(20))
         bet_option = 'choice1'
 
@@ -211,169 +211,169 @@ class TestExample(unittest.TestCase):
         self.assertEqual(VMState.FAULT, self.engine.vm_state)
         self.assertTrue(self.engine.error.endswith('GAS transfer was not successful'))
 
-    def _finish_bet(self, creator_account: bytes, bet_id: bytes, winners: List[str]):
+    def _finish_pool(self, creator_account: bytes, bet_id: bytes, winners: List[str]):
         self.engine.add_signer_account(creator_account)
-        self.engine.run(self.nef_path, 'finish_bet', bet_id, winners)
+        self.engine.run(self.nef_path, 'finish_pool', bet_id, winners)
 
-    def test_finish_bet_success_one_winner(self):
+    def test_finish_pool_success_one_winner(self):
         self.engine.reset_engine()
 
         creator_account = bytes(20)
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
         player = bytes(range(20))
         bet_option = 'choice2'
         self._bet(bet_id, player, bet_option)
 
         winner_option = [bet_option]
         self.engine.add_signer_account(creator_account)
-        self.engine.run(self.nef_path, 'finish_bet', bet_id, winner_option)
+        self.engine.run(self.nef_path, 'finish_pool', bet_id, winner_option)
         self.assertEqual(VMState.HALT, self.engine.vm_state)
 
-    def test_finish_bet_success_two_winners(self):
+    def test_finish_pool_success_two_winners(self):
         self.engine.reset_engine()
 
         creator_account = bytes(20)
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
         player = bytes(range(20))
         bet_option = 'choice2'
         self._bet(bet_id, player, bet_option)
 
         winner_option = ['choice1', bet_option]
         self.engine.add_signer_account(creator_account)
-        self.engine.run(self.nef_path, 'finish_bet', bet_id, winner_option)
+        self.engine.run(self.nef_path, 'finish_pool', bet_id, winner_option)
         self.assertEqual(VMState.HALT, self.engine.vm_state)
 
-    def test_finish_bet_fail_doesnt_exist(self):
+    def test_finish_pool_fail_doesnt_exist(self):
         self.engine.reset_engine()
 
         bet_id = bytes(32)
         winner_option = []
 
-        self.engine.run(self.nef_path, 'finish_bet', bet_id, winner_option)
+        self.engine.run(self.nef_path, 'finish_pool', bet_id, winner_option)
         self.assertEqual(VMState.FAULT, self.engine.vm_state)
-        self.assertTrue(self.engine.error.endswith("Bet doesn't exist."))
+        self.assertTrue(self.engine.error.endswith("Pool doesn't exist."))
 
-    def test_finish_bet_fail_check_witness(self):
+    def test_finish_pool_fail_check_witness(self):
         self.engine.reset_engine()
 
         creator_account = bytes(20)
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
         winner_option = ['choice1']
 
-        self.engine.run(self.nef_path, 'finish_bet', bet_id, winner_option)
+        self.engine.run(self.nef_path, 'finish_pool', bet_id, winner_option)
         self.assertEqual(VMState.FAULT, self.engine.vm_state)
         self.assertTrue(self.engine.error.endswith('No authorization.'))
 
-    def test_finish_bet_fail_finished_already(self):
+    def test_finish_pool_fail_finished_already(self):
         self.engine.reset_engine()
 
         creator_account = bytes(20)
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
         winner_option = ['choice1']
-        self._finish_bet(creator_account, bet_id, winner_option)
+        self._finish_pool(creator_account, bet_id, winner_option)
         self.assertEqual(VMState.HALT, self.engine.vm_state)
 
-        self._finish_bet(creator_account, bet_id, winner_option)
+        self._finish_pool(creator_account, bet_id, winner_option)
         self.assertEqual(VMState.FAULT, self.engine.vm_state)
-        self.assertTrue(self.engine.error.endswith('Bet is finished already'))
+        self.assertTrue(self.engine.error.endswith('Pool is finished already'))
 
-    def test_finish_bet_fail_not_enough_winner_options(self):
+    def test_finish_pool_fail_not_enough_winner_options(self):
         self.engine.reset_engine()
 
         creator_account = bytes(20)
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
         winner_option = []
 
         self.engine.add_signer_account(creator_account)
-        self.engine.run(self.nef_path, 'finish_bet', bet_id, winner_option)
+        self.engine.run(self.nef_path, 'finish_pool', bet_id, winner_option)
         self.assertEqual(VMState.FAULT, self.engine.vm_state)
         self.assertTrue(self.engine.error.endswith('At least one winner is required'))
 
-    def test_finish_bet_fail_invalid_winner_option(self):
+    def test_finish_pool_fail_invalid_winner_option(self):
         self.engine.reset_engine()
 
         creator_account = bytes(20)
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
         winner_option = ['choice4']
 
         self.engine.add_signer_account(creator_account)
-        self.engine.run(self.nef_path, 'finish_bet', bet_id, winner_option)
+        self.engine.run(self.nef_path, 'finish_pool', bet_id, winner_option)
         self.assertEqual(VMState.FAULT, self.engine.vm_state)
-        self.assertTrue(self.engine.error.endswith('Invalid option for this bet'))
+        self.assertTrue(self.engine.error.endswith('Invalid option for this pool'))
 
-    def _cancel_bet(self, creator_account: bytes, bet_id: bytes):
+    def _cancel_pool(self, creator_account: bytes, bet_id: bytes):
         self.engine.add_signer_account(creator_account)
-        self.engine.run(self.nef_path, 'cancel_bet', bet_id)
+        self.engine.run(self.nef_path, 'cancel_pool', bet_id)
 
-    def test_cancel_bet_success(self):
+    def test_cancel_pool_success(self):
         self.engine.reset_engine()
 
         creator_account = bytes(20)
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
 
         self.engine.add_signer_account(creator_account)
-        self.engine.run(self.nef_path, 'cancel_bet', bet_id)
+        self.engine.run(self.nef_path, 'cancel_pool', bet_id)
         self.assertEqual(VMState.HALT, self.engine.vm_state)
 
-    def test_cancel_bet_fail_doesnt_exist(self):
+    def test_cancel_pool_fail_doesnt_exist(self):
         self.engine.reset_engine()
 
         bet_id = bytes(32)
 
-        self.engine.run(self.nef_path, 'cancel_bet', bet_id)
+        self.engine.run(self.nef_path, 'cancel_pool', bet_id)
         self.assertEqual(VMState.FAULT, self.engine.vm_state)
-        self.assertTrue(self.engine.error.endswith("Bet doesn't exist."))
+        self.assertTrue(self.engine.error.endswith("Pool doesn't exist."))
 
-    def test_cancel_bet_fail_check_witness(self):
+    def test_cancel_pool_fail_check_witness(self):
         self.engine.reset_engine()
 
         creator_account = bytes(20)
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
 
-        self.engine.run(self.nef_path, 'cancel_bet', bet_id)
+        self.engine.run(self.nef_path, 'cancel_pool', bet_id)
         self.assertEqual(VMState.FAULT, self.engine.vm_state)
         self.assertTrue(self.engine.error.endswith('No authorization.'))
 
-    def test_cancel_bet_fail_finished_already(self):
+    def test_cancel_pool_fail_finished_already(self):
         self.engine.reset_engine()
 
         creator_account = bytes(20)
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
         winner_option = ['choice1']
-        self._finish_bet(creator_account, bet_id, winner_option)
+        self._finish_pool(creator_account, bet_id, winner_option)
         self.assertEqual(VMState.HALT, self.engine.vm_state)
 
         self.engine.add_signer_account(creator_account)
-        self.engine.run(self.nef_path, 'cancel_bet', bet_id)
+        self.engine.run(self.nef_path, 'cancel_pool', bet_id)
         self.assertEqual(VMState.FAULT, self.engine.vm_state)
-        self.assertTrue(self.engine.error.endswith('Bet is finished already'))
+        self.assertTrue(self.engine.error.endswith('Pool is finished already'))
 
     def test_cancel_player_bet_success(self):
         self.engine.reset_engine()
@@ -382,7 +382,7 @@ class TestExample(unittest.TestCase):
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
         player = bytes(range(20))
         bet_option = 'choice1'
         self._bet(bet_id, player, bet_option)
@@ -399,7 +399,7 @@ class TestExample(unittest.TestCase):
 
         self.engine.run(self.nef_path, 'cancel_player_bet', player, bet_id)
         self.assertEqual(VMState.FAULT, self.engine.vm_state)
-        self.assertTrue(self.engine.error.endswith("Bet doesn't exist."))
+        self.assertTrue(self.engine.error.endswith("Pool doesn't exist."))
 
     def test_cancel_player_bet_fail_check_witness(self):
         self.engine.reset_engine()
@@ -408,7 +408,7 @@ class TestExample(unittest.TestCase):
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
         player = bytes(range(20))
 
         self.engine.run(self.nef_path, 'cancel_player_bet', player, bet_id)
@@ -422,7 +422,7 @@ class TestExample(unittest.TestCase):
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
         player = bytes(range(20))
 
         self.engine.run(self.nef_path, 'cancel_player_bet', player, bet_id)
@@ -436,7 +436,7 @@ class TestExample(unittest.TestCase):
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
         player = bytes(range(20))
 
         self.engine.add_signer_account(player)
@@ -444,17 +444,17 @@ class TestExample(unittest.TestCase):
         self.assertEqual(VMState.FAULT, self.engine.vm_state)
         self.assertTrue(self.engine.error.endswith("Player didn't bet on this pool"))
 
-    def test_get_bet_success_on_going(self):
+    def test_get_pool_success_on_going(self):
         self.engine.reset_engine()
 
         creator_account = bytes(20)
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
         self.assertEqual(VMState.HALT, self.engine.vm_state)
 
-        result = self.engine.run(self.nef_path, 'get_bet', bet_id)
+        result = self.engine.run(self.nef_path, 'get_pool', bet_id)
         self.assertEqual(VMState.HALT, self.engine.vm_state)
         self.assertIsInstance(result, list)
         self.assertEqual(5, len(result))
@@ -468,21 +468,21 @@ class TestExample(unittest.TestCase):
         self.assertEqual(options, result[3])            # options
         self.assertIsNone(result[4])                    # result - is None because it's on going
 
-    def test_get_bet_success_finished(self):
+    def test_get_pool_success_finished(self):
         self.engine.reset_engine()
 
         creator_account = bytes(20)
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
         self.assertEqual(VMState.HALT, self.engine.vm_state)
 
         winners = ['choice1']
-        self._finish_bet(creator_account, bet_id, winners)
+        self._finish_pool(creator_account, bet_id, winners)
         self.assertEqual(VMState.HALT, self.engine.vm_state)
 
-        result = self.engine.run(self.nef_path, 'get_bet', bet_id)
+        result = self.engine.run(self.nef_path, 'get_pool', bet_id)
         self.assertEqual(VMState.HALT, self.engine.vm_state)
         self.assertIsInstance(result, list)
         self.assertEqual(5, len(result))
@@ -496,20 +496,20 @@ class TestExample(unittest.TestCase):
         self.assertEqual(options, result[3])            # options
         self.assertEqual(winners, result[4])            # result
 
-    def test_get_bet_success_cancelled(self):
+    def test_get_pool_success_cancelled(self):
         self.engine.reset_engine()
 
         creator_account = bytes(20)
         description = 'Bet for testing'
         options = ['choice1', 'choice2', 'choice3']
 
-        bet_id = self._create_bet(creator_account, description, options)
+        bet_id = self._create_pool(creator_account, description, options)
         self.assertEqual(VMState.HALT, self.engine.vm_state)
 
-        self._cancel_bet(creator_account, bet_id)
+        self._cancel_pool(creator_account, bet_id)
         self.assertEqual(VMState.HALT, self.engine.vm_state)
 
-        result = self.engine.run(self.nef_path, 'get_bet', bet_id)
+        result = self.engine.run(self.nef_path, 'get_pool', bet_id)
         self.assertEqual(VMState.HALT, self.engine.vm_state)
         self.assertIsInstance(result, list)
         self.assertEqual(5, len(result))
@@ -523,11 +523,11 @@ class TestExample(unittest.TestCase):
         self.assertEqual(options, result[3])                # options
         self.assertEqual('Cancelled by owner', result[4])   # result
 
-    def test_get_bet_fail_doesnt_exist(self):
+    def test_get_pool_fail_doesnt_exist(self):
         self.engine.reset_engine()
         bet_id = bytes(32)
 
-        self.engine.run(self.nef_path, 'get_bet', bet_id)
+        self.engine.run(self.nef_path, 'get_pool', bet_id)
         self.assertEqual(VMState.FAULT, self.engine.vm_state)
-        self.assertTrue(self.engine.error.endswith("Bet doesn't exist."))
+        self.assertTrue(self.engine.error.endswith("Pool doesn't exist."))
 
