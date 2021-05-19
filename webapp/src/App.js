@@ -41,7 +41,9 @@ function App() {
 
   return (
     <div className="App">
-      <img id="neo-logo" src={Logo} alt="n3-logo" />
+      <a href="https://neo.org" target="_blank">
+        <img id="neo-logo" src={Logo} alt="n3-logo" />
+      </a>
       <Router>
         <div>
           <nav>
@@ -52,7 +54,7 @@ function App() {
             </code>
             <ul>
               <li>
-                <Link to="/">Party time</Link>
+                <Link to="/">View the blockchain powered easal</Link>
               </li>
               <li>
                 <Link to="/invoke-contract">Invoke Contract</Link>

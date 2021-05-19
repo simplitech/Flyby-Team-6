@@ -60,6 +60,7 @@ nav {
 #neo-logo {
   max-width: 200px;
   margin-bottom: 48px;
+  cursor: pointer;
 }
 
 .App-link {
@@ -88,6 +89,10 @@ nav {
   height: 350px;
   margin-top: 40px;
   transform: rotate(-2deg);
+}
+
+button {
+  cursor: pointer;
 }
 
 @keyframes App-logo-spin {
