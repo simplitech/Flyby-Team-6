@@ -1,14 +1,20 @@
 import Neon, { wallet } from "@cityofzion/neon-js";
 import { useEffect, useState } from "react";
-import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Switch,
+  Route,
+  Link,
+  useHistory,
+} from "react-router-dom";
 
 import Logo from "./logo.svg";
 import hero1 from "./1.jpg";
 import hero2 from "./2.jpg";
 import hero3 from "./3.png";
-import Easel from "./easel.svg";
 import "./App.css";
 
+// TODO: shuffle through these images randomly
 const images = [hero1, hero2, hero3];
 
 function App() {
@@ -20,6 +26,7 @@ function App() {
       `wss://dora.coz.io/ws/v1/neo3/testnet/log/0xf9ffa64482b38c0dc7841cf27d25a9f03dfb0381`
     );
     socket.onmessage = function (event) {
+      console.log("incoming socket event:", { event });
       const data = JSON.parse(event.data);
       setCurrenBlock(data.height);
       if (
@@ -34,11 +41,9 @@ function App() {
     };
   });
 
-  console.log({ invokeDetected });
-
   return (
     <div className="App">
-      <img id="neo-logo" src={Logo} />
+      <img id="neo-logo" src={Logo} alt="n3-logo" />
       <Router>
         <div>
           <nav>
@@ -56,9 +61,6 @@ function App() {
               </li>
             </ul>
           </nav>
-
-          {/* A <Switch> looks through its children <Route>s and
-            renders the first one that matches the current URL. */}
           <Switch>
             <Route path="/invoke-contract">
               <Invoke />
@@ -78,7 +80,9 @@ function Invoke() {
   const [wif, setWif] = useState("");
   const [isValidWif, setIsValidWif] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState(false);
   const nodeURL = "https://testnet1.neo.coz.io";
+  const history = useHistory();
 
   useEffect(() => {
     if (wallet.isWIF(wif)) {
@@ -111,9 +115,18 @@ function Invoke() {
     };
 
     setProcessing(true);
-    performInvoke(inputs).then(() => {
-      setProcessing(false);
-    });
+    performInvoke(inputs)
+      .then(() => {
+        setProcessing(false);
+        history.push("/");
+      })
+      .catch((e) => {
+        console.error(e);
+        setProcessing(false);
+        setWif("");
+        setIsValidWif(false);
+        setError(e.message || e);
+      });
   }
 
   return (
@@ -126,8 +139,9 @@ function Invoke() {
         <button onClick={handleInvoke}> CLICK TO INVOKE </button>
       ) : (
         <form>
+          {error && <code id="error"> {error} </code>}
+          <label>Enter private key below to invoke contract:</label>
           <input onChange={(e) => setWif(e.target.value)} type="text"></input>
-          <input type="submit"></input>
         </form>
       )}
     </>
@@ -139,7 +153,12 @@ function Home({ invokeDetected }) {
     <div id="frame-container">
       <div id="frame">
         {invokeDetected && (
-          <img className="animate-flicker " src={hero1} id="hero" />
+          <img
+            className="animate-flicker "
+            src={hero1}
+            id="hero"
+            alt="flickering-hero"
+          />
         )}
       </div>
     </div>
