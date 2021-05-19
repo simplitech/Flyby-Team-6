@@ -375,7 +375,7 @@ class TestExample(unittest.TestCase):
         self.assertEqual(VMState.FAULT, self.engine.vm_state)
         self.assertTrue(self.engine.error.endswith('Bet is finished already'))
 
-    def test_cancel_bet_fail_cannot_pay_fee(self):
+    def test_cancel_player_bet_success(self):
         self.engine.reset_engine()
 
         creator_account = bytes(20)
@@ -385,14 +385,64 @@ class TestExample(unittest.TestCase):
         bet_id = self._create_bet(creator_account, description, options)
         player = bytes(range(20))
         bet_option = 'choice1'
-
         self._bet(bet_id, player, bet_option)
+
+        self.engine.add_signer_account(player)
+        self.engine.run(self.nef_path, 'cancel_player_bet', player, bet_id)
         self.assertEqual(VMState.HALT, self.engine.vm_state)
 
-        self.engine.add_signer_account(creator_account)
-        self.engine.run(self.nef_path, 'cancel_bet', bet_id)
+    def test_cancel_player_bet_fail_doesnt_exist(self):
+        self.engine.reset_engine()
+
+        bet_id = bytes(32)
+        player = bytes(20)
+
+        self.engine.run(self.nef_path, 'cancel_player_bet', player, bet_id)
         self.assertEqual(VMState.FAULT, self.engine.vm_state)
-        self.assertTrue(self.engine.error.endswith('GAS transfer was not successful'))
+        self.assertTrue(self.engine.error.endswith("Bet doesn't exist."))
+
+    def test_cancel_player_bet_fail_check_witness(self):
+        self.engine.reset_engine()
+
+        creator_account = bytes(20)
+        description = 'Bet for testing'
+        options = ['choice1', 'choice2', 'choice3']
+
+        bet_id = self._create_bet(creator_account, description, options)
+        player = bytes(range(20))
+
+        self.engine.run(self.nef_path, 'cancel_player_bet', player, bet_id)
+        self.assertEqual(VMState.FAULT, self.engine.vm_state)
+        self.assertTrue(self.engine.error.endswith('No authorization.'))
+
+    def test_cancel_player_bet_fail_player_didnt_bet(self):
+        self.engine.reset_engine()
+
+        creator_account = bytes(20)
+        description = 'Bet for testing'
+        options = ['choice1', 'choice2', 'choice3']
+
+        bet_id = self._create_bet(creator_account, description, options)
+        player = bytes(range(20))
+
+        self.engine.run(self.nef_path, 'cancel_player_bet', player, bet_id)
+        self.assertEqual(VMState.FAULT, self.engine.vm_state)
+        self.assertTrue(self.engine.error.endswith('No authorization.'))
+
+    def test_cancel_player_bet_fail_finished_already(self):
+        self.engine.reset_engine()
+
+        creator_account = bytes(20)
+        description = 'Bet for testing'
+        options = ['choice1', 'choice2', 'choice3']
+
+        bet_id = self._create_bet(creator_account, description, options)
+        player = bytes(range(20))
+
+        self.engine.add_signer_account(player)
+        self.engine.run(self.nef_path, 'cancel_player_bet', player, bet_id)
+        self.assertEqual(VMState.FAULT, self.engine.vm_state)
+        self.assertTrue(self.engine.error.endswith("Player didn't bet on this pool"))
 
     def test_get_bet_success_on_going(self):
         self.engine.reset_engine()

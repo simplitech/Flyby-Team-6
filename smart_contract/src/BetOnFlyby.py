@@ -6,7 +6,7 @@ from boa3.builtin.interop.binary import deserialize, serialize
 from boa3.builtin.interop.blockchain import Transaction
 from boa3.builtin.interop.contract import GAS, call_contract, destroy_contract, update_contract
 from boa3.builtin.interop.runtime import calling_script_hash, check_witness, executing_script_hash, script_container
-from boa3.builtin.interop.storage import find, get, put
+from boa3.builtin.interop.storage import delete, find, get, put
 from boa3.builtin.type import UInt160, UInt256
 
 # -------------------------------------------
@@ -124,7 +124,6 @@ def finish_bet(bet_id: UInt256, winner_options: List[str]):
         account_vote = cast(str, result_pair[1])
 
         if account_vote in winner_options:
-            # slice is not implemented for bytes on neo3-boa v0.8.1
             address = storage_key[len(votes_key_prefix):]
             account = UInt160(address)
             winners.append(account)
@@ -155,10 +154,7 @@ def cancel_bet(bet_id: UInt256):
     if len(get(BET_RESULT_KEY + bet_id)) > 0:
         raise Exception("Bet is finished already")
 
-    # 5% fee of total stake for cancelling the bet
-    total_stake = get(BET_TOTAL_STAKE_KEY + bet_id).to_int()
     executing_contract = executing_script_hash
-    transfer_gas(creator, executing_contract, total_stake * 5 // 100)
 
     # refund players
     votes_key_prefix = BET_VOTE_KEY + bet_id
@@ -172,6 +168,24 @@ def cancel_bet(bet_id: UInt256):
 
     # set result
     put(BET_RESULT_KEY + bet_id, serialize('Cancelled by owner'))
+
+
+@public
+def cancel_player_bet(player: UInt160, bet_id: UInt256):
+    if len(get(BET_OWNER_KEY + bet_id)) == 0:
+        raise Exception("Bet doesn't exist.")
+    if not check_witness(player):
+        raise Exception('No authorization.')
+    if len(get(BET_RESULT_KEY + bet_id)) > 0:
+        raise Exception("Bet is finished already")
+    if len(get(BET_VOTE_KEY + bet_id + player)) == 0:
+        raise Exception("Player didn't bet on this pool")
+
+    # 5% fee of the bet for cancelling
+    refund_value = PRICE_IN_GAS - PRICE_IN_GAS * 5 // 100
+    transfer_gas(executing_script_hash, player, refund_value)
+
+    delete(BET_VOTE_KEY + bet_id + player)
 
 
 @public
