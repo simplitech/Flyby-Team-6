@@ -12,10 +12,11 @@ import Logo from "./logo.svg";
 import hero1 from "./1.jpg";
 import hero2 from "./2.jpg";
 import hero3 from "./3.png";
+import hero4 from "./4.png";
 import "./App.css";
 
 // TODO: shuffle through these images randomly
-const images = [hero1, hero2, hero3];
+const images = [hero1, hero2, hero3, hero4];
 
 function App() {
   const [currentBlock, setCurrenBlock] = useState(0);
@@ -149,13 +150,19 @@ function Invoke() {
 }
 
 function Home({ invokeDetected }) {
+  const [randomImage, setRandomImage] = useState("");
+
+  useEffect(() => {
+    setRandomImage(images[Math.floor(Math.random() * images.length)]);
+  }, [invokeDetected]);
+
   return (
     <div id="frame-container">
       <div id="frame">
         {invokeDetected && (
           <img
             className="animate-flicker "
-            src={hero1}
+            src={randomImage}
             id="hero"
             alt="flickering-hero"
           />

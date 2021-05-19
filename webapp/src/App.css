@@ -84,11 +84,10 @@ nav {
 }
 
 #hero {
-  max-width: 175px;
-  /* position: absolute; */
-  /* left: 40%; */
-  margin-top: 20px;
-  transform: rotate(-5deg);
+  max-width: 200px;
+  height: 350px;
+  margin-top: 40px;
+  transform: rotate(-2deg);
 }
 
 @keyframes App-logo-spin {
