@@ -59,6 +59,25 @@ def get_pool(pool_id: UInt256) -> list:
 
 
 @public
+def list_on_going_pools() -> list:
+    pools = []
+
+    created_pools = find(POOL_OWNER_KEY)
+    while created_pools.next():
+        result_pair = created_pools.value
+        storage_key = cast(bytes, result_pair[0])
+        pool_id = storage_key[len(POOL_OWNER_KEY):]
+        pool_hash: UInt256 = pool_id
+
+        if len(get(POOL_RESULT_KEY + pool_id)) == 0:
+            # open is still open
+            pool = get_pool(pool_hash)
+            pools.append(pool)
+
+    return pools
+
+
+@public
 def create_pool(creator: UInt160, description: str, options: List[str]) -> UInt256:
     if not check_witness(creator):
         raise Exception('No authorization.')
@@ -118,7 +137,7 @@ def finish_pool(pool_id: UInt256, winner_options: List[str]):
     # get winner players
     bets_key_prefix = POOL_BET_KEY + pool_id
     bet = find(bets_key_prefix)
-    if bet.next():
+    while bet.next():
         result_pair = bet.value
         storage_key = cast(bytes, result_pair[0])
         account_bet = cast(str, result_pair[1])
@@ -159,7 +178,7 @@ def cancel_pool(pool_id: UInt256):
     # refund players
     bets_key_prefix = POOL_BET_KEY + pool_id
     bet = find(bets_key_prefix)
-    if bet.next():
+    while bet.next():
         result_pair: List[bytes] = bet.value
         storage_key = result_pair[0]
 
