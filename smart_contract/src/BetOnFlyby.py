@@ -21,12 +21,12 @@ on_change_image = CreateNewEvent([('sender', UInt160)],
 # -------------------------------------------
 
 OWNER_KEY = b'OWNER'
-BET_OWNER_KEY = b'bet_owner_'
-BET_TOTAL_STAKE_KEY = b'bet_total_stake_'
-BET_OPTIONS_KEY = b'bet_options_'
-BET_DESCRIPTION_KEY = b'bet_description_'
-BET_RESULT_KEY = b'bet_result_'
-BET_VOTE_KEY = b'bet_vote_'
+POOL_OWNER_KEY = b'pool_owner_'
+POOL_TOTAL_STAKE_KEY = b'pool_total_stake_'
+POOL_OPTIONS_KEY = b'pool_options_'
+POOL_DESCRIPTION_KEY = b'pool_description_'
+POOL_RESULT_KEY = b'pool_result_'
+POOL_BET_KEY = b'pool_bet_'
 
 # -------------------------------------------
 # CONTRACT LOGIC
@@ -36,21 +36,21 @@ PRICE_IN_GAS = 1 * 10 ** 8  # bet cost is 1 GAS
 
 
 @public
-def get_bet(bet_id: UInt256) -> list:
-    creator = get(BET_OWNER_KEY + bet_id)
+def get_pool(pool_id: UInt256) -> list:
+    creator = get(POOL_OWNER_KEY + pool_id)
 
     if len(creator) == 0:
-        raise Exception("Bet doesn't exist.")
+        raise Exception("Pool doesn't exist.")
 
-    description = get(BET_DESCRIPTION_KEY + bet_id).to_str()
-    options: List[str] = deserialize(get(BET_OPTIONS_KEY + bet_id))
+    description = get(POOL_DESCRIPTION_KEY + pool_id).to_str()
+    options: List[str] = deserialize(get(POOL_OPTIONS_KEY + pool_id))
 
     result = None
-    serialized_result = get(BET_RESULT_KEY + bet_id)
+    serialized_result = get(POOL_RESULT_KEY + pool_id)
     if len(serialized_result) > 0:
         result = deserialize(serialized_result)
 
-    return [bet_id,
+    return [pool_id,
             creator,
             description,
             options,
@@ -59,29 +59,48 @@ def get_bet(bet_id: UInt256) -> list:
 
 
 @public
-def create_bet(creator: UInt160, description: str, options: List[str]) -> UInt256:
+def list_on_going_pools() -> list:
+    pools = []
+
+    created_pools = find(POOL_OWNER_KEY)
+    while created_pools.next():
+        result_pair = created_pools.value
+        storage_key = cast(bytes, result_pair[0])
+        pool_id = storage_key[len(POOL_OWNER_KEY):]
+        pool_hash: UInt256 = pool_id
+
+        if len(get(POOL_RESULT_KEY + pool_id)) == 0:
+            # open is still open
+            pool = get_pool(pool_hash)
+            pools.append(pool)
+
+    return pools
+
+
+@public
+def create_pool(creator: UInt160, description: str, options: List[str]) -> UInt256:
     if not check_witness(creator):
         raise Exception('No authorization.')
 
     options: List[str] = remove_duplicates(options)
     if len(options) < 2:
-        raise Exception('Not enough options to create a bet')
+        raise Exception('Not enough options to create a pool')
 
     for option in options:
         if len(option) == 0:
             raise Exception('Cannot have an empty option')
 
     tx: Transaction = script_container
-    bet_id = tx.hash
+    pool_id = tx.hash
 
-    put(BET_OWNER_KEY + bet_id, creator)
-    put(BET_TOTAL_STAKE_KEY + bet_id, 0)
-    put(BET_OPTIONS_KEY + bet_id, serialize(options))
-    put(BET_DESCRIPTION_KEY + bet_id, description)
+    put(POOL_OWNER_KEY + pool_id, creator)
+    put(POOL_TOTAL_STAKE_KEY + pool_id, 0)
+    put(POOL_OPTIONS_KEY + pool_id, serialize(options))
+    put(POOL_DESCRIPTION_KEY + pool_id, description)
 
     request_image_change()
 
-    return bet_id
+    return pool_id
 
 
 def remove_duplicates(list_with_dups: list) -> list:
@@ -94,43 +113,43 @@ def remove_duplicates(list_with_dups: list) -> list:
 
 
 @public
-def finish_bet(bet_id: UInt256, winner_options: List[str]):
-    creator = get(BET_OWNER_KEY + bet_id)
+def finish_pool(pool_id: UInt256, winner_options: List[str]):
+    creator = get(POOL_OWNER_KEY + pool_id)
 
     if len(creator) == 0:
-        raise Exception("Bet doesn't exist.")
+        raise Exception("Pool doesn't exist.")
     if not check_witness(creator):
         raise Exception('No authorization.')
-    if len(get(BET_RESULT_KEY + bet_id)) > 0:
-        raise Exception("Bet is finished already")
+    if len(get(POOL_RESULT_KEY + pool_id)) > 0:
+        raise Exception('Pool is finished already')
     if len(winner_options) == 0:
         raise Exception('At least one winner is required')
 
     # validate all winner options are valid options
     winner_options: List[str] = remove_duplicates(winner_options)
-    bet_options: List[str] = deserialize(get(BET_OPTIONS_KEY + bet_id))
+    pool_options: List[str] = deserialize(get(POOL_OPTIONS_KEY + pool_id))
     for option in winner_options:
-        if option not in bet_options:
-            raise Exception('Invalid option for this bet')
+        if option not in pool_options:
+            raise Exception('Invalid option for this pool')
 
     winners: List[UInt160] = []
 
     # get winner players
-    votes_key_prefix = BET_VOTE_KEY + bet_id
-    vote = find(votes_key_prefix)
-    if vote.next():
-        result_pair = vote.value
+    bets_key_prefix = POOL_BET_KEY + pool_id
+    bet = find(bets_key_prefix)
+    while bet.next():
+        result_pair = bet.value
         storage_key = cast(bytes, result_pair[0])
-        account_vote = cast(str, result_pair[1])
+        account_bet = cast(str, result_pair[1])
 
-        if account_vote in winner_options:
-            address = storage_key[len(votes_key_prefix):]
+        if account_bet in winner_options:
+            address = storage_key[len(bets_key_prefix):]
             account = UInt160(address)
             winners.append(account)
 
     # distribute the prizes
     if len(winners) > 0:
-        total_stake = get(BET_TOTAL_STAKE_KEY + bet_id).to_int()
+        total_stake = get(POOL_TOTAL_STAKE_KEY + pool_id).to_int()
         prize_per_winner = total_stake // len(winners)
         executing_contract = executing_script_hash
 
@@ -138,79 +157,79 @@ def finish_bet(bet_id: UInt256, winner_options: List[str]):
             transfer_gas(executing_contract, winner, prize_per_winner)
 
     # set result
-    put(BET_RESULT_KEY + bet_id, serialize(winner_options))
+    put(POOL_RESULT_KEY + pool_id, serialize(winner_options))
 
 
 @public
-def cancel_bet(bet_id: UInt256):
-    creator_on_storage = get(BET_OWNER_KEY + bet_id)
+def cancel_pool(pool_id: UInt256):
+    creator_on_storage = get(POOL_OWNER_KEY + pool_id)
 
     if len(creator_on_storage) == 0:
-        raise Exception("Bet doesn't exist.")
+        raise Exception("Pool doesn't exist.")
 
     creator = UInt160(creator_on_storage)
     if not check_witness(creator):
         raise Exception('No authorization.')
-    if len(get(BET_RESULT_KEY + bet_id)) > 0:
-        raise Exception("Bet is finished already")
+    if len(get(POOL_RESULT_KEY + pool_id)) > 0:
+        raise Exception('Pool is finished already')
 
     executing_contract = executing_script_hash
 
     # refund players
-    votes_key_prefix = BET_VOTE_KEY + bet_id
-    vote = find(votes_key_prefix)
-    if vote.next():
-        result_pair: List[bytes] = vote.value
+    bets_key_prefix = POOL_BET_KEY + pool_id
+    bet = find(bets_key_prefix)
+    while bet.next():
+        result_pair: List[bytes] = bet.value
         storage_key = result_pair[0]
 
-        account = UInt160(storage_key[len(votes_key_prefix):])
+        account = UInt160(storage_key[len(bets_key_prefix):])
         transfer_gas(executing_contract, account, PRICE_IN_GAS)
 
     # set result
-    put(BET_RESULT_KEY + bet_id, serialize('Cancelled by owner'))
+    put(POOL_RESULT_KEY + pool_id, serialize('Cancelled by owner'))
 
 
 @public
 def cancel_player_bet(player: UInt160, bet_id: UInt256):
-    if len(get(BET_OWNER_KEY + bet_id)) == 0:
-        raise Exception("Bet doesn't exist.")
+    if len(get(POOL_OWNER_KEY + bet_id)) == 0:
+        raise Exception("Pool doesn't exist.")
     if not check_witness(player):
         raise Exception('No authorization.')
-    if len(get(BET_RESULT_KEY + bet_id)) > 0:
-        raise Exception("Bet is finished already")
-    if len(get(BET_VOTE_KEY + bet_id + player)) == 0:
+    if len(get(POOL_RESULT_KEY + bet_id)) > 0:
+        raise Exception('Pool is finished already')
+    if len(get(POOL_BET_KEY + bet_id + player)) == 0:
         raise Exception("Player didn't bet on this pool")
 
     # 5% fee of the bet for cancelling
     refund_value = PRICE_IN_GAS - PRICE_IN_GAS * 5 // 100
     transfer_gas(executing_script_hash, player, refund_value)
 
-    delete(BET_VOTE_KEY + bet_id + player)
+    delete(POOL_BET_KEY + bet_id + player)
 
 
 @public
 def bet(player: UInt160, bet_id: UInt256, bet_option: str):
-    if len(get(BET_OWNER_KEY + bet_id)) == 0:
-        raise Exception("Bet doesn't exist.")
+    if len(get(POOL_OWNER_KEY + bet_id)) == 0:
+        raise Exception("Pool doesn't exist.")
     if not check_witness(player):
         raise Exception('No authorization.')
-    if len(get(BET_RESULT_KEY + bet_id)) > 0:
-        raise Exception("Bet is finished already")
+    if len(get(POOL_RESULT_KEY + bet_id)) > 0:
+        raise Exception('Pool is finished already')
 
-    player_vote_key = BET_VOTE_KEY + bet_id + player
+    player_vote_key = POOL_BET_KEY + bet_id + player
     if len(get(player_vote_key)) > 0:
         raise Exception('Only one bet is allowed per account')
 
-    valid_options: List[str] = deserialize(get(BET_OPTIONS_KEY + bet_id))
+    valid_options: List[str] = deserialize(get(POOL_OPTIONS_KEY + bet_id))
     if bet_option not in valid_options:
-        raise Exception('Invalid option for this bet')
+        raise Exception('Invalid option for this pool')
 
-    total_stake = get(BET_TOTAL_STAKE_KEY + bet_id).to_int()
+    total_stake = get(POOL_TOTAL_STAKE_KEY + bet_id).to_int()
     total_stake += PRICE_IN_GAS
 
     transfer_gas(player, executing_script_hash, PRICE_IN_GAS)
     put(player_vote_key, bet_option)
-    put(BET_TOTAL_STAKE_KEY + bet_id, total_stake)
+    put(POOL_TOTAL_STAKE_KEY + bet_id, total_stake)
 
     request_image_change()
 
