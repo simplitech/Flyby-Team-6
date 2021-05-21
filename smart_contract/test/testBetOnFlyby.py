@@ -457,16 +457,120 @@ class TestSmartContract(unittest.TestCase):
         result = self.engine.run(self.nef_path, 'get_pool', pool_id)
         self.assertEqual(VMState.HALT, self.engine.vm_state)
         self.assertIsInstance(result, list)
-        self.assertEqual(5, len(result))
+        self.assertEqual(6, len(result))
 
         if isinstance(result[1], str):      # test engine converts to string whenever is possible
             result[1] = result[1].encode('utf-8')
 
-        self.assertEqual(pool_id, result[0])             # pool_id
+        self.assertEqual(pool_id, result[0])            # pool_id
         self.assertEqual(creator_account, result[1])    # creator
         self.assertEqual(description, result[2])        # description
         self.assertEqual(options, result[3])            # options
         self.assertIsNone(result[4])                    # result - is None because it's on going
+        self.assertEqual({}, result[5])                 # bets on this pool
+
+    def test_get_pool_success_has_bets(self):
+        self.engine.reset_engine()
+
+        creator_account = bytes(20)
+        description = 'Bet for testing'
+        options = ['choice1', 'choice2', 'choice3']
+
+        pool_id = self._create_pool(creator_account, description, options)
+        self.assertEqual(VMState.HALT, self.engine.vm_state)
+
+        player = bytes(range(20))
+        bet_option = 'choice1'
+
+        self._bet(pool_id, player, bet_option)
+        self.assertEqual(VMState.HALT, self.engine.vm_state)
+
+        result = self.engine.run(self.nef_path, 'get_pool', pool_id)
+        self.assertEqual(VMState.HALT, self.engine.vm_state)
+        self.assertIsInstance(result, list)
+        self.assertEqual(6, len(result))
+
+        if isinstance(result[1], str):      # test engine converts to string whenever is possible
+            result[1] = result[1].encode('utf-8')
+
+        self.assertEqual(pool_id, result[0])            # pool_id
+        self.assertEqual(creator_account, result[1])    # creator
+        self.assertEqual(description, result[2])        # description
+        self.assertEqual(options, result[3])            # options
+        self.assertIsNone(result[4])                    # result - is None because it's on going
+        self.assertIsInstance(result[5], dict)          # bets on this pool
+        self.assertEqual(1, len(result[5]))
+
+        bet1_player, bet1_choice = list(result[5].items())[0]
+        if isinstance(bet1_player, str):      # test engine converts to string whenever is possible
+            bet1_player = bet1_player.encode('utf-8')
+        self.assertEqual(player, bet1_player)
+        self.assertEqual(bet_option, bet1_choice)
+
+    def test_get_pool_success_finished(self):
+        self.engine.reset_engine()
+
+        creator_account = bytes(20)
+        description = 'Bet for testing'
+        options = ['choice1', 'choice2', 'choice3']
+
+        pool_id = self._create_pool(creator_account, description, options)
+        self.assertEqual(VMState.HALT, self.engine.vm_state)
+
+        winners = ['choice1']
+        self._finish_pool(creator_account, pool_id, winners)
+        self.assertEqual(VMState.HALT, self.engine.vm_state)
+
+        result = self.engine.run(self.nef_path, 'get_pool', pool_id)
+        self.assertEqual(VMState.HALT, self.engine.vm_state)
+        self.assertIsInstance(result, list)
+        self.assertEqual(6, len(result))
+
+        if isinstance(result[1], str):      # test engine converts to string whenever is possible
+            result[1] = result[1].encode('utf-8')
+
+        self.assertEqual(pool_id, result[0])            # pool_id
+        self.assertEqual(creator_account, result[1])    # creator
+        self.assertEqual(description, result[2])        # description
+        self.assertEqual(options, result[3])            # options
+        self.assertEqual(winners, result[4])            # result
+        self.assertEqual({}, result[5])                 # bets on this pool
+
+    def test_get_pool_success_cancelled(self):
+        self.engine.reset_engine()
+
+        creator_account = bytes(20)
+        description = 'Bet for testing'
+        options = ['choice1', 'choice2', 'choice3']
+
+        pool_id = self._create_pool(creator_account, description, options)
+        self.assertEqual(VMState.HALT, self.engine.vm_state)
+
+        self._cancel_pool(creator_account, pool_id)
+        self.assertEqual(VMState.HALT, self.engine.vm_state)
+
+        result = self.engine.run(self.nef_path, 'get_pool', pool_id)
+        self.assertEqual(VMState.HALT, self.engine.vm_state)
+        self.assertIsInstance(result, list)
+        self.assertEqual(6, len(result))
+
+        if isinstance(result[1], str):      # test engine converts to string whenever is possible
+            result[1] = result[1].encode('utf-8')
+
+        self.assertEqual(pool_id, result[0])                # pool_id
+        self.assertEqual(creator_account, result[1])        # creator
+        self.assertEqual(description, result[2])            # description
+        self.assertEqual(options, result[3])                # options
+        self.assertEqual('Cancelled by owner', result[4])   # result
+        self.assertEqual({}, result[5])                     # bets on this pool
+
+    def test_get_pool_fail_doesnt_exist(self):
+        self.engine.reset_engine()
+        pool_id = bytes(32)
+
+        self.engine.run(self.nef_path, 'get_pool', pool_id)
+        self.assertEqual(VMState.FAULT, self.engine.vm_state)
+        self.assertTrue(self.engine.error.endswith("Pool doesn't exist."))
 
     def test_list_open_pools_success_no_pools_created(self):
         self.engine.reset_engine()
@@ -492,12 +596,12 @@ class TestSmartContract(unittest.TestCase):
         self.assertEqual(1, len(result))
         pool = result[0]
         self.assertIsInstance(pool, list)
-        self.assertEqual(5, len(pool))
+        self.assertEqual(6, len(pool))
 
         if isinstance(pool[1], str):      # test engine converts to string whenever is possible
             pool[1] = pool[1].encode('utf-8')
 
-        self.assertEqual(pool_id, pool[0])             # pool_id
+        self.assertEqual(pool_id, pool[0])            # pool_id
         self.assertEqual(creator_account, pool[1])    # creator
         self.assertEqual(description, pool[2])        # description
         self.assertEqual(options, pool[3])            # options
@@ -538,67 +642,3 @@ class TestSmartContract(unittest.TestCase):
         self.assertEqual(VMState.HALT, self.engine.vm_state)
         self.assertIsInstance(result, list)
         self.assertEqual(0, len(result))
-
-    def test_get_pool_success_finished(self):
-        self.engine.reset_engine()
-
-        creator_account = bytes(20)
-        description = 'Bet for testing'
-        options = ['choice1', 'choice2', 'choice3']
-
-        pool_id = self._create_pool(creator_account, description, options)
-        self.assertEqual(VMState.HALT, self.engine.vm_state)
-
-        winners = ['choice1']
-        self._finish_pool(creator_account, pool_id, winners)
-        self.assertEqual(VMState.HALT, self.engine.vm_state)
-
-        result = self.engine.run(self.nef_path, 'get_pool', pool_id)
-        self.assertEqual(VMState.HALT, self.engine.vm_state)
-        self.assertIsInstance(result, list)
-        self.assertEqual(5, len(result))
-
-        if isinstance(result[1], str):      # test engine converts to string whenever is possible
-            result[1] = result[1].encode('utf-8')
-
-        self.assertEqual(pool_id, result[0])             # pool_id
-        self.assertEqual(creator_account, result[1])    # creator
-        self.assertEqual(description, result[2])        # description
-        self.assertEqual(options, result[3])            # options
-        self.assertEqual(winners, result[4])            # result
-
-    def test_get_pool_success_cancelled(self):
-        self.engine.reset_engine()
-
-        creator_account = bytes(20)
-        description = 'Bet for testing'
-        options = ['choice1', 'choice2', 'choice3']
-
-        pool_id = self._create_pool(creator_account, description, options)
-        self.assertEqual(VMState.HALT, self.engine.vm_state)
-
-        self._cancel_pool(creator_account, pool_id)
-        self.assertEqual(VMState.HALT, self.engine.vm_state)
-
-        result = self.engine.run(self.nef_path, 'get_pool', pool_id)
-        self.assertEqual(VMState.HALT, self.engine.vm_state)
-        self.assertIsInstance(result, list)
-        self.assertEqual(5, len(result))
-
-        if isinstance(result[1], str):      # test engine converts to string whenever is possible
-            result[1] = result[1].encode('utf-8')
-
-        self.assertEqual(pool_id, result[0])                 # pool_id
-        self.assertEqual(creator_account, result[1])        # creator
-        self.assertEqual(description, result[2])            # description
-        self.assertEqual(options, result[3])                # options
-        self.assertEqual('Cancelled by owner', result[4])   # result
-
-    def test_get_pool_fail_doesnt_exist(self):
-        self.engine.reset_engine()
-        pool_id = bytes(32)
-
-        self.engine.run(self.nef_path, 'get_pool', pool_id)
-        self.assertEqual(VMState.FAULT, self.engine.vm_state)
-        self.assertTrue(self.engine.error.endswith("Pool doesn't exist."))
-
