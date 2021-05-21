@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, NavLink } from "react-router-dom";
 
-import DesktopLogo from "./desktop_logo.svg";
+import DesktopLogo from "./desktop_logo.png";
 import logo from "./logo.svg";
 import "./Navigation.css";
 
