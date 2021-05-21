@@ -1,4 +1,4 @@
-from typing import Any, List, cast
+from typing import Any, Dict, List, cast
 
 from boa3.builtin import CreateNewEvent, public
 from boa3.builtin.contract import abort
@@ -50,11 +50,23 @@ def get_pool(pool_id: UInt256) -> list:
     if len(serialized_result) > 0:
         result = deserialize(serialized_result)
 
+    pool_bets: Dict[bytes, str] = {}
+    bet_prefix = POOL_BET_KEY + pool_id
+    bets = find(bet_prefix)
+    while bets.next():
+        result_pair = bets.value
+        storage_key = cast(bytes, result_pair[0])
+        player_bet = cast(str, result_pair[1])
+        player_id = storage_key[len(bet_prefix):].to_str().to_bytes()
+
+        pool_bets[player_id] = player_bet
+
     return [pool_id,
             creator,
             description,
             options,
-            result
+            result,
+            pool_bets
             ]
 
 
