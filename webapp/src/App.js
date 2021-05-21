@@ -1,4 +1,4 @@
-import Neon, { wallet } from "@cityofzion/neon-js";
+import Neon, { wallet, rpc, tx, u, sc, Signer } from "@cityofzion/neon-js";
 import { useEffect, useState } from "react";
 import {
   BrowserRouter as Router,
@@ -14,6 +14,8 @@ import hero2 from "./2.jpg";
 import hero3 from "./3.png";
 import hero4 from "./4.png";
 import "./App.css";
+const { addFees, setBlockExpiry } = Neon.experimental.txHelpers;
+const FLYBY_CONTRACT = "0xa9ab4ea48570270b4c4c9b47a97340f545dfd9a8";
 
 function App() {
   const [currentBlock, setCurrenBlock] = useState(0);
@@ -21,7 +23,7 @@ function App() {
 
   useEffect(() => {
     const socket = new WebSocket(
-      `wss://dora.coz.io/ws/v1/neo3/testnet/log/0xf9ffa64482b38c0dc7841cf27d25a9f03dfb0381`
+      `wss://dora.coz.io/ws/v1/neo3/testnet/log/${FLYBY_CONTRACT}`
     );
     socket.onmessage = function (event) {
       console.log("incoming socket event:", { event });
@@ -49,8 +51,9 @@ function App() {
           <nav>
             <code>
               {" "}
-              websocket connection to dora live: current block height:{" "}
-              {currentBlock}
+              websocket connection to dora:{" "}
+              {currentBlock === 0 ? <b>dead</b> : <b>live</b>} <br />
+              <br /> current block height: {currentBlock}
             </code>
             <ul>
               <li>
@@ -90,9 +93,9 @@ function Invoke() {
     }
   }, [wif]);
 
-  async function performInvoke(inputs) {
+  async function requestImageChange(inputs) {
     const contract = new Neon.experimental.SmartContract(
-      Neon.u.HexString.fromHex("0xf9ffa64482b38c0dc7841cf27d25a9f03dfb0381"),
+      Neon.u.HexString.fromHex(FLYBY_CONTRACT),
       {
         networkMagic: inputs.networkMagic,
         rpcAddress: inputs.nodeUrl,
@@ -102,20 +105,84 @@ function Invoke() {
     await contract.invoke("request_image_change", []);
   }
 
+  async function getPools(inputs) {
+    const contract = new Neon.experimental.SmartContract(
+      Neon.u.HexString.fromHex(FLYBY_CONTRACT),
+      {
+        networkMagic: inputs.networkMagic,
+        rpcAddress: inputs.nodeUrl,
+        account: inputs.fromAccount,
+      }
+    );
+    await contract.testInvoke("list_on_going_pools", []);
+  }
+
+  async function getPool(inputs) {
+    const contract = new Neon.experimental.SmartContract(
+      Neon.u.HexString.fromHex(FLYBY_CONTRACT),
+      {
+        networkMagic: inputs.networkMagic,
+        rpcAddress: inputs.nodeUrl,
+        account: inputs.fromAccount,
+      }
+    );
+    await contract.testInvoke("get_pool", [
+      {
+        type: "ByteArray",
+        value: "xOlaSCYnLhVN80Q/OFgOrf/T6Ej1vJovMn/Klg6XYaY=",
+      },
+    ]);
+  }
+
+  async function performBet(inputs) {
+    const rpcClient = new rpc.RPCClient(inputs.nodeUrl);
+    const config = {
+      networkMagic: inputs.networkMagic,
+      rpcAddress: inputs.nodeUrl,
+      account: inputs.fromAccount,
+    };
+    const builder = new sc.ScriptBuilder();
+    builder.emitAppCall(FLYBY_CONTRACT, "bet", [
+      {
+        type: "Hash160",
+        value: inputs.fromAccount.scriptHash,
+      },
+      {
+        type: "ByteArray",
+        value: "xOlaSCYnLhVN80Q/OFgOrf/T6Ej1vJovMn/Klg6XYaY=",
+      },
+      {
+        type: "String",
+        value: "choice2",
+      },
+    ]);
+    const transaction = new tx.Transaction();
+    transaction.script = u.HexString.fromHex(builder.build());
+    await setBlockExpiry(transaction, config);
+    transaction.addSigner({
+      account: inputs.fromAccount.scriptHash,
+      scopes: "Global",
+    });
+    await addFees(transaction, config);
+    transaction.sign(inputs.fromAccount, inputs.networkMagic);
+    const results = await rpcClient.sendRawTransaction(transaction);
+    console.log(results);
+  }
+
   async function handleInvoke() {
     const from = new wallet.Account(wif);
     const inputs = {
       fromAccount: from,
-      tokenScriptHash: "0xf9ffa64482b38c0dc7841cf27d25a9f03dfb0381",
+      tokenScriptHash: FLYBY_CONTRACT,
       amountToTransfer: 0.1,
-      systemFee: 0,
-      networkFee: 0,
+      systemFee: 0.1,
+      networkFee: 0.1,
       networkMagic: 844378958,
       nodeUrl: nodeURL,
     };
 
     setProcessing(true);
-    performInvoke(inputs)
+    getPool(inputs)
       .then(() => {
         setProcessing(false);
         history.push("/");
