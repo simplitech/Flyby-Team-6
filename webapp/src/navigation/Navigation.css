@@ -1,0 +1,22 @@
+.desktop-navigation {
+  max-height: 80px;
+}
+
+.primary-nav-item span {
+  font-family: "Open Sans";
+  font-weight: bold;
+  font-size: 22px;
+  color: #eeeeee;
+  letter-spacing: -0.06px;
+  text-align: left;
+  font-style: italic;
+}
+
+.desktop-navigation-n3-logo {
+  max-width: 35px;
+}
+
+footer img {
+  max-width: 100px;
+  margin: 12px;
+}

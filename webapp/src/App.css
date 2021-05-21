@@ -1,6 +1,8 @@
 .App {
   text-align: center;
-  padding: 48px;
+
+  max-width: 1200px;
+  margin: auto;
 }
 
 .App-logo {
@@ -25,10 +27,6 @@
   color: white;
 }
 
-p {
-  color: green;
-}
-
 ul {
   list-style: none;
   margin-block-start: 0;
@@ -51,10 +49,6 @@ form {
 input {
   width: 350px;
   margin-top: 12px;
-}
-
-nav {
-  margin-bottom: 48px;
 }
 
 #neo-logo {
