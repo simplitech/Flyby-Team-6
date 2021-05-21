@@ -1,28 +1,33 @@
 {
   "files": {
-    "main.css": "/Flyby-Team-6/static/css/main.8ae7cec7.chunk.css",
-    "main.js": "/Flyby-Team-6/static/js/main.396a42dd.chunk.js",
-    "main.js.map": "/Flyby-Team-6/static/js/main.396a42dd.chunk.js.map",
-    "runtime-main.js": "/Flyby-Team-6/static/js/runtime-main.d9329ed6.js",
-    "runtime-main.js.map": "/Flyby-Team-6/static/js/runtime-main.d9329ed6.js.map",
-    "static/js/2.746b1151.chunk.js": "/Flyby-Team-6/static/js/2.746b1151.chunk.js",
-    "static/js/2.746b1151.chunk.js.map": "/Flyby-Team-6/static/js/2.746b1151.chunk.js.map",
-    "static/js/3.a5a40d9e.chunk.js": "/Flyby-Team-6/static/js/3.a5a40d9e.chunk.js",
-    "static/js/3.a5a40d9e.chunk.js.map": "/Flyby-Team-6/static/js/3.a5a40d9e.chunk.js.map",
+    "main.css": "/Flyby-Team-6/static/css/main.b1676004.chunk.css",
+    "main.js": "/Flyby-Team-6/static/js/main.96674eeb.chunk.js",
+    "main.js.map": "/Flyby-Team-6/static/js/main.96674eeb.chunk.js.map",
+    "runtime-main.js": "/Flyby-Team-6/static/js/runtime-main.ee297db8.js",
+    "runtime-main.js.map": "/Flyby-Team-6/static/js/runtime-main.ee297db8.js.map",
+    "static/js/2.42c0aa49.chunk.js": "/Flyby-Team-6/static/js/2.42c0aa49.chunk.js",
+    "static/js/2.42c0aa49.chunk.js.map": "/Flyby-Team-6/static/js/2.42c0aa49.chunk.js.map",
+    "static/js/3.e3f66a31.chunk.js": "/Flyby-Team-6/static/js/3.e3f66a31.chunk.js",
+    "static/js/3.e3f66a31.chunk.js.map": "/Flyby-Team-6/static/js/3.e3f66a31.chunk.js.map",
     "index.html": "/Flyby-Team-6/index.html",
-    "static/css/main.8ae7cec7.chunk.css.map": "/Flyby-Team-6/static/css/main.8ae7cec7.chunk.css.map",
-    "static/js/2.746b1151.chunk.js.LICENSE.txt": "/Flyby-Team-6/static/js/2.746b1151.chunk.js.LICENSE.txt",
+    "static/css/main.b1676004.chunk.css.map": "/Flyby-Team-6/static/css/main.b1676004.chunk.css.map",
+    "static/js/2.42c0aa49.chunk.js.LICENSE.txt": "/Flyby-Team-6/static/js/2.42c0aa49.chunk.js.LICENSE.txt",
     "static/media/1.bd030e55.jpg": "/Flyby-Team-6/static/media/1.bd030e55.jpg",
     "static/media/2.d3d44706.jpg": "/Flyby-Team-6/static/media/2.d3d44706.jpg",
     "static/media/3.ebbe5071.png": "/Flyby-Team-6/static/media/3.ebbe5071.png",
     "static/media/4.f6abd800.png": "/Flyby-Team-6/static/media/4.f6abd800.png",
+    "static/media/boa.4c7e0b20.svg": "/Flyby-Team-6/static/media/boa.4c7e0b20.svg",
+    "static/media/coz_logo.1a7460b3.svg": "/Flyby-Team-6/static/media/coz_logo.1a7460b3.svg",
+    "static/media/desktop_logo.1e160d67.svg": "/Flyby-Team-6/static/media/desktop_logo.1e160d67.svg",
+    "static/media/dora.00d834bd.svg": "/Flyby-Team-6/static/media/dora.00d834bd.svg",
     "static/media/App.css": "/Flyby-Team-6/static/media/easel.9fb2847a.svg",
-    "static/media/logo.49aa5273.svg": "/Flyby-Team-6/static/media/logo.49aa5273.svg"
+    "static/media/logo.49aa5273.svg": "/Flyby-Team-6/static/media/logo.49aa5273.svg",
+    "static/media/neonjs.c9410845.svg": "/Flyby-Team-6/static/media/neonjs.c9410845.svg"
   },
   "entrypoints": [
-    "static/js/runtime-main.d9329ed6.js",
-    "static/js/2.746b1151.chunk.js",
-    "static/css/main.8ae7cec7.chunk.css",
-    "static/js/main.396a42dd.chunk.js"
+    "static/js/runtime-main.ee297db8.js",
+    "static/js/2.42c0aa49.chunk.js",
+    "static/css/main.b1676004.chunk.css",
+    "static/js/main.96674eeb.chunk.js"
   ]
 }

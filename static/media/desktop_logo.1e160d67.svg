@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="221px" height="89px" viewBox="0 0 221 89" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Group 3</title>
+    <g id="Welcome" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Desktop-HD" transform="translate(-195.000000, -10.000000)">
+            <g id="Group-3" transform="translate(195.000000, 10.000000)">
+                <g id="Group-2" fill="#EEEEEE">
+                    <text id="BET-ON" fill-rule="nonzero" font-family="OpenSans-BoldItalic, Open Sans" font-size="48" font-style="italic" font-weight="bold" letter-spacing="-0.1368">
+                        <tspan x="48" y="51">BET ON</tspan>
+                    </text>
+                    <text id="A-dApp-built-on-top" font-family="OpenSans-Light, Open Sans" font-size="22" font-weight="300" letter-spacing="-0.0627">
+                        <tspan x="0" y="83">A dApp built on top of </tspan>
+                    </text>
+                </g>
+                <text id="🎰" font-family="AppleColorEmoji, Apple Color Emoji" font-size="36" font-weight="normal" letter-spacing="-0.1026" fill="#272343">
+                    <tspan x="0" y="48">🎰</tspan>
+                </text>
+            </g>
+        </g>
+    </g>
+</svg>
