@@ -1,9 +1,9 @@
-import coz_logo from "./coz_logo.svg";
+import { ReactComponent as Logo } from "./coz_logo.svg";
 
 function Footer() {
   return (
     <footer class="bg-darkGrey flex justify-center  h-20 border-t border-highlight cursor-pointer">
-      <img src={coz_logo} />
+      <Logo />
     </footer>
   );
 }
